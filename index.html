@@ -91,7 +91,7 @@ h2{font-family:var(--f-display);font-weight:700;font-size:2.3rem;color:var(--bro
   background:radial-gradient(circle,#fffbe8 0 18%,rgba(255,240,190,.6) 30%,transparent 62%);animation:tw 3.2s ease-in-out infinite}
 .tw::before,.tw::after{content:"";position:absolute;left:50%;top:50%;width:16px;height:1.5px;transform:translate(-50%,-50%);background:linear-gradient(90deg,transparent,#fff7d8,transparent)}
 .tw::after{transform:translate(-50%,-50%) rotate(90deg)}
-#petals{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
+#petals{position:fixed;left:0;top:0;width:100vw;height:100vh;height:100lvh;pointer-events:none;z-index:30}
 @keyframes kb{from{transform:scale(1)}to{transform:scale(1.035)}}
 @keyframes swayA{0%,100%{transform:rotate(0)}50%{transform:rotate(.7deg)}}
 @keyframes swayB{0%,100%{transform:rotate(0)}50%{transform:rotate(-.7deg)}}
@@ -316,7 +316,6 @@ label.opt:has(input:checked){border-color:var(--gold);background:rgba(217,189,13
     <i class="tw" style="left:88%;top:66%;animation-delay:-.6s"></i><i class="tw" style="left:30%;top:4%;animation-delay:-2.6s"></i><i class="tw" style="left:93%;top:84%;animation-delay:-1.7s"></i>
     <i class="tw" style="left:6%;top:88%;animation-delay:-3s"></i><i class="tw" style="left:66%;top:14%;animation-delay:-.3s"></i>
     </div>
-    <canvas id="petals" aria-hidden="true"></canvas>
     <h1 class="sr">حفل زفاف محمد وآلاء</h1>
   </section>
 
@@ -410,11 +409,12 @@ label.opt:has(input:checked){border-color:var(--gold);background:rgba(217,189,13
     <p>وجودكم معنا ودعواتكم الطيبة هما أجمل هدية لنا، ومشاركتكم يومنا تكمّل فرحتنا وتزيدها جمالًا.</p>
     <p>نسعد بأن تجمعنا بكم هذه اللحظة، ونرجو أن يبقى هذا اليوم ذكرى دافئة في قلوبنا جميعًا.</p>
     <span class="wait">ننتظركم بكل حب</span>
-    <span class="sign">محمد طلعت و آلاء</span>
+    <span class="sign">محمد طلعت و آلاء وائل</span>
   </section>
 </main>
 
 
+<canvas id="petals" aria-hidden="true"></canvas>
 <button class="fab" id="fab-scroll" type="button" aria-label="إيقاف النزول التلقائي" hidden>
   <svg viewBox="0 0 24 24" id="ic-scroll" aria-hidden="true"><path fill="currentColor" d="M7 5h3v14H7zm7 0h3v14h-3z"/></svg>
 </button>
@@ -551,22 +551,36 @@ label.opt:has(input:checked){border-color:var(--gold);background:rgba(217,189,13
     paint(); addEventListener("resize", function(){ if (!done) paint(); });
   });
 
-  /* ---------- falling petals on hero ---------- */
+  /* ---------- falling petals over the whole page ---------- */
   (function(){
-    var c = document.getElementById("petals"); if (!c || reduce) return;
-    var x = c.getContext("2d"), P = [], W = 0, H = 0;
-    function size(){ var r = c.getBoundingClientRect(), d = Math.min(devicePixelRatio||1,2); W = r.width; H = r.height; c.width = W*d; c.height = H*d; x.setTransform(d,0,0,d,0,0); }
+    var c = document.getElementById("petals"); if (!c) return;
+    var x = c.getContext("2d"), P = [], W = 0, H = 0, N = 26;
+    function size(){ var d = Math.min(window.devicePixelRatio||1,2); W = window.innerWidth; H = Math.max(window.innerHeight, document.documentElement.clientHeight); c.width = Math.round(W*d); c.height = Math.round(H*d); x.setTransform(d,0,0,d,0,0); }
+    function petal(top){ return {x:Math.random()*W, y: top ? -20-Math.random()*H*.3 : Math.random()*H, s:7+Math.random()*7, v:.6+Math.random()*.9, a:Math.random()*6.28, w:.012+Math.random()*.025, sw:.6+Math.random()*1.2, k:Math.random()}; }
     size(); addEventListener("resize", size);
-    for (var i=0;i<22;i++) P.push({x:Math.random()*W,y:Math.random()*H,s:4+Math.random()*5,v:.3+Math.random()*.5,a:Math.random()*6.28,w:.01+Math.random()*.02});
+    for (var i=0;i<N;i++) P.push(petal(false));
+    function shape(p){
+      var s = p.s;
+      x.beginPath();
+      x.moveTo(0,-s);
+      x.bezierCurveTo(s*.9,-s*.7, s*.8,s*.6, 0,s);
+      x.bezierCurveTo(-s*.8,s*.6, -s*.9,-s*.7, 0,-s);
+      x.closePath();
+    }
     function draw(){
       x.clearRect(0,0,W,H);
-      P.forEach(function(p){
-        p.y += p.v; p.a += p.w; p.x += Math.sin(p.a)*.5;
-        if (p.y > H+10){ p.y = -10; p.x = Math.random()*W; }
-        x.save(); x.translate(p.x,p.y); x.rotate(p.a);
-        x.fillStyle = "rgba(248,205,205,.85)"; x.strokeStyle = "rgba(235,170,170,.5)"; x.lineWidth = .6;
-        x.beginPath(); x.ellipse(0,0,p.s,p.s*.6,0,0,6.283); x.fill(); x.stroke(); x.restore();
-      });
+      for (var i=0;i<P.length;i++){
+        var p = P[i];
+        p.y += reduce ? p.v*.4 : p.v; p.a += p.w; p.x += Math.sin(p.a)*p.sw;
+        if (p.y > H+20 || p.x < -30 || p.x > W+30){ P[i] = petal(true); continue; }
+        x.save(); x.translate(p.x,p.y); x.rotate(p.a*1.3); x.scale(1, .55 + .45*Math.abs(Math.cos(p.a)));
+        shape(p);
+        x.fillStyle = p.k < .7 ? "rgba(246,182,190,.92)" : "rgba(252,226,214,.95)";
+        x.fill();
+        x.strokeStyle = "rgba(214,140,150,.45)"; x.lineWidth = .8; x.stroke();
+        x.beginPath(); x.moveTo(0,-p.s*.7); x.lineTo(0,p.s*.6); x.strokeStyle = "rgba(255,255,255,.55)"; x.lineWidth = .7; x.stroke();
+        x.restore();
+      }
       requestAnimationFrame(draw);
     }
     requestAnimationFrame(draw);
